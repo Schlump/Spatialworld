@@ -12,4 +12,4 @@ docker build -t Geoserver .
 
 ### Run
 
-docker run --name "geoserver" -p 8080:8080 -d -t schlump/Geoserver
+docker run --name "geoserver" -p 8080:8080 -d -t Geoserver

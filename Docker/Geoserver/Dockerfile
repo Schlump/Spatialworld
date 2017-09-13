@@ -79,29 +79,29 @@ RUN apk add --virtual .build-deps --no-cache\
 	# Download and install GeoServer
 	&& mkdir -p $GEOSERVER_DATA_DIR \
 	&& cd /var/lib/jetty/ \
-    && wget  -q http://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERVER_VERSION}/geoserver-${GEOSERVER_VERSION}-war.zip \
-    && unzip -q geoserver-${GEOSERVER_VERSION}-war.zip \
-    && mkdir -p webapps/geoserver/ \
-    && unzip -q geoserver.war -d webapps/geoserver/ \
-    && chown -R jetty:jetty /var/lib/jetty/ \
-    && rm geoserver-${GEOSERVER_VERSION}-war.zip \
-    && rm geoserver.war \
+	&& wget  -q http://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERVER_VERSION}/geoserver-${GEOSERVER_VERSION}-war.zip \
+	&& unzip -q geoserver-${GEOSERVER_VERSION}-war.zip \
+	&& mkdir -p webapps/geoserver/ \
+	&& unzip -q geoserver.war -d webapps/geoserver/ \
+	&& chown -R jetty:jetty /var/lib/jetty/ \
+	&& rm geoserver-${GEOSERVER_VERSION}-war.zip \
+	&& rm geoserver.war \
 
 	# Compile GDAL
-    && wget -q http://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz \
-    && mv gdal-${GDAL_VERSION}.tar.gz  /tmp/ \
-    && tar -zxf /tmp/gdal-${GDAL_VERSION}.tar.gz -C /tmp \
-    && cd /tmp/gdal-${GDAL_VERSION} && ./configure  --with-java=$JAVA_HOME && make -s && make install \
+	&& wget -q http://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz \
+	&& mv gdal-${GDAL_VERSION}.tar.gz  /tmp/ \
+	&& tar -zxf /tmp/gdal-${GDAL_VERSION}.tar.gz -C /tmp \
+	&& cd /tmp/gdal-${GDAL_VERSION} && ./configure  --with-java=$JAVA_HOME && make -s && make install \
 
-    # Install GDAL Java binding
-    && cd /tmp/gdal-${GDAL_VERSION}/swig/java\
-    && sed -i '/JAVA_HOME =/d' java.opt \
-    && make -s && make install \
-    && cp *.so /usr/local/lib/  \
-    && cp /tmp/gdal-${GDAL_VERSION}/swig/java/gdal.jar /var/lib/jetty/webapps/geoserver/WEB-INF/lib/ \
-    && mv /tmp/gdal-${GDAL_VERSION}/swig/java/gdal.jar /usr/share/gdal.jar \
+	# Install GDAL Java binding
+	&& cd /tmp/gdal-${GDAL_VERSION}/swig/java\
+	&& sed -i '/JAVA_HOME =/d' java.opt \
+	&& make -s && make install \
+	&& cp *.so /usr/local/lib/  \
+	&& cp /tmp/gdal-${GDAL_VERSION}/swig/java/gdal.jar /var/lib/jetty/webapps/geoserver/WEB-INF/lib/ \
+	&& mv /tmp/gdal-${GDAL_VERSION}/swig/java/gdal.jar /usr/share/gdal.jar \
 
-    # Download and install Extensions
+	# Download and install Extensions
 	&& wget -q https://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERVER_VERSION}/extensions/geoserver-${GEOSERVER_VERSION}-gdal-plugin.zip \
 	&& wget -q https://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERVER_VERSION}/extensions/geoserver-${GEOSERVER_VERSION}-inspire-plugin.zip \
 	&& unzip -oq geoserver-${GEOSERVER_VERSION}-gdal-plugin.zip -d /var/lib/jetty/webapps/geoserver/WEB-INF/lib/ \
@@ -117,13 +117,13 @@ RUN apk add --virtual .build-deps --no-cache\
 	&& mv /tmp/jai-1_1_3/lib/jai_codec.jar $JAVA_HOME/lib/ext  \
 	&& mv /tmp/jai-1_1_3/lib/jai_core.jar $JAVA_HOME/lib/ext \
 	&& mv /tmp/jai-1_1_3/lib/mlibwrapper_jai.jar $JAVA_HOME/lib/ext  \
-    && mv /tmp/jai-1_1_3/lib/*.so $JAVA_HOME/lib/amd64/  \
-    && mv /tmp/jai_imageio-1_1/lib/clibwrapper_jiio.jar $JAVA_HOME/lib/ext  \
-    && mv /tmp/jai_imageio-1_1/lib/jai_imageio.jar $JAVA_HOME/lib/ext  \
-    && mv /tmp/jai_imageio-1_1/lib/*.so $JAVA_HOME/lib/amd64 \
+	&& mv /tmp/jai-1_1_3/lib/*.so $JAVA_HOME/lib/amd64/  \
+	&& mv /tmp/jai_imageio-1_1/lib/clibwrapper_jiio.jar $JAVA_HOME/lib/ext  \
+	&& mv /tmp/jai_imageio-1_1/lib/jai_imageio.jar $JAVA_HOME/lib/ext  \
+	&& mv /tmp/jai_imageio-1_1/lib/*.so $JAVA_HOME/lib/amd64 \
 
 
-    # Remove installed packages and various cleanup
+	# Remove installed packages and various cleanup
 	&& apk del .build-deps \
 	&& rm -rf /tmp/* \
 
