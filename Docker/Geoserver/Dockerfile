@@ -17,6 +17,11 @@ WORKDIR $JETTY_HOME
 
 ENV JETTY_VERSION 9.4.6.v20170531
 ENV JETTY_TGZ_URL https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/$JETTY_VERSION/jetty-home-$JETTY_VERSION.tar.gz
+ENV JETTY_BASE /var/lib/jetty
+
+ENV GEOSERVER_VERSION=2.11.2
+ENV GEOSERVER_DATA_DIR /var/lib/jetty/webapps/geoserver/data
+ENV GDAL_VERSION=2.2.1
 
 # GPG Keys are personal keys of Jetty committers (see https://github.com/eclipse/jetty.project/blob/0607c0e66e44b9c12a62b85551da3a0edce0281e/KEYS.txt)
 ENV JETTY_GPG_KEYS \
@@ -37,9 +42,24 @@ ENV JETTY_GPG_KEYS \
 	# Greg Wilkins    <gregw@webtide.com>
 	5C9579B3DB2E506429319AAEF33B071B29559E1E
 
-RUN set -xe \
+RUN set -xe 
+
 	# Install required packages for build time. Will be removed when build finishes.
-	&& apk add --no-cache --virtual .build-deps gnupg curl \
+	# Update Alpine Linux, Install GDAL and wget for SSL transfer 
+RUN apk update && apk upgrade 
+RUN apk add --virtual .build-deps --no-cache\
+	gnupg \
+	#update-ca-certificates \
+	ca-certificates \
+	tar \
+	g++ \
+	libstdc++ \
+	make \
+	swig \
+	apache-ant \
+	linux-headers \
+	curl \
+	wget \
 
 	&& curl -SL "$JETTY_TGZ_URL" -o jetty.tar.gz \
 	&& curl -SL "$JETTY_TGZ_URL.asc" -o jetty.tar.gz.asc \
@@ -54,88 +74,35 @@ RUN set -xe \
 	&& rm jetty.tar.gz* \
 	&& rm -fr jetty-home-$JETTY_VERSION/ \
 
-	# Remove installed packages and various cleanup
-	&& apk del .build-deps \
-	&& rm -fr .build-deps \
-	&& rm -rf /tmp/hsperfdata_root
-
-ENV JETTY_BASE /var/lib/jetty
-RUN mkdir -p "$JETTY_BASE"
-WORKDIR $JETTY_BASE
-
-RUN set -xe \
-	&& java -jar "$JETTY_HOME/start.jar" --create-startd --add-to-start="server,http,deploy,jsp,jstl,ext,resources,websocket,setuid" \
-	&& chown -R jetty:jetty "$JETTY_BASE" \
-	&& rm -rf /tmp/hsperfdata_root
-
-ENV TMPDIR /tmp/jetty
-RUN set -xe \
-	&& mkdir -p "$TMPDIR" \
-	&& chown -R jetty:jetty "$TMPDIR"
 
 
-
-
-
-#
-# Set GeoServer version and data directory
-#
-ENV GEOSERVER_VERSION=2.11.2
-#ENV GEOSERVER_DATA_DIR="/var/lib/jetty/webapps/geoserver/data"
-ENV GEOSERVER_DATA_DIR /var/lib/jetty/webapps/geoserver/data
-ENV GDAL_VERSION=2.2.1
-
-
-RUN mkdir -p $GEOSERVER_DATA_DIR
-
-# Update Alpine Linux, Install GDAL and wget for SSL transfer 
-RUN apk update \
-&& apk add ca-certificates wget tar\
-&& update-ca-certificates \
-&& apk upgrade --available 
-
-
-
-
-#
-# Download and install GeoServer
-#
-RUN cd /var/lib/jetty/ \
+	# Download and install GeoServer
+	&& mkdir -p $GEOSERVER_DATA_DIR \
+	&& cd /var/lib/jetty/ \
     && wget  -q http://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERVER_VERSION}/geoserver-${GEOSERVER_VERSION}-war.zip \
     && unzip -q geoserver-${GEOSERVER_VERSION}-war.zip \
     && mkdir -p webapps/geoserver/ \
     && unzip -q geoserver.war -d webapps/geoserver/ \
     && chown -R jetty:jetty /var/lib/jetty/ \
     && rm geoserver-${GEOSERVER_VERSION}-war.zip \
-    && rm geoserver.war 
+    && rm geoserver.war \
 
-
-
-# Compile GDAL
-RUN apk --update --no-cache add g++ libstdc++ make swig apache-ant linux-headers  \
-
+	# Compile GDAL
     && wget -q http://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz \
     && mv gdal-${GDAL_VERSION}.tar.gz  /tmp/ \
     && tar -zxf /tmp/gdal-${GDAL_VERSION}.tar.gz -C /tmp \
     && cd /tmp/gdal-${GDAL_VERSION} && ./configure  --with-java=$JAVA_HOME && make -s && make install \
 
-
-# Install GDAL Java binding
+    # Install GDAL Java binding
     && cd /tmp/gdal-${GDAL_VERSION}/swig/java\
     && sed -i '/JAVA_HOME =/d' java.opt \
     && make -s && make install \
     && cp *.so /usr/local/lib/  \
     && cp /tmp/gdal-${GDAL_VERSION}/swig/java/gdal.jar /var/lib/jetty/webapps/geoserver/WEB-INF/lib/ \
-    && mv /tmp/gdal-${GDAL_VERSION}/swig/java/gdal.jar /usr/share/gdal.jar 
+    && mv /tmp/gdal-${GDAL_VERSION}/swig/java/gdal.jar /usr/share/gdal.jar \
 
-
-
-
-
-
-ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/usr/lib/jni:/usr/share/java:/usr/local/lib/
-# Download and install Extensions
-RUN wget -q https://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERVER_VERSION}/extensions/geoserver-${GEOSERVER_VERSION}-gdal-plugin.zip \
+    # Download and install Extensions
+	&& wget -q https://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERVER_VERSION}/extensions/geoserver-${GEOSERVER_VERSION}-gdal-plugin.zip \
 	&& wget -q https://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERVER_VERSION}/extensions/geoserver-${GEOSERVER_VERSION}-inspire-plugin.zip \
 	&& unzip -oq geoserver-${GEOSERVER_VERSION}-gdal-plugin.zip -d /var/lib/jetty/webapps/geoserver/WEB-INF/lib/ \
 	&& unzip -oq geoserver-${GEOSERVER_VERSION}-inspire-plugin.zip -d /var/lib/jetty/webapps/geoserver/WEB-INF/lib/ \
@@ -154,16 +121,37 @@ RUN wget -q https://sourceforge.net/projects/geoserver/files/GeoServer/${GEOSERV
     && mv /tmp/jai_imageio-1_1/lib/clibwrapper_jiio.jar $JAVA_HOME/lib/ext  \
     && mv /tmp/jai_imageio-1_1/lib/jai_imageio.jar $JAVA_HOME/lib/ext  \
     && mv /tmp/jai_imageio-1_1/lib/*.so $JAVA_HOME/lib/amd64 \
-    
-    && rm -rf /tmp/* \
-    && apk del g++ make swig wget tar apache-ant \
-    && rm -rf /var/cache/apk/* 
 
-# Remove Geosever example data
-RUN rm -rf $GEOSERVER_DATA_DIR/workspaces/*  \
-	&& rm -rf $GEOSERVER_DATA_DIR/coverages/*  \
+
+    # Remove installed packages and various cleanup
+	&& apk del .build-deps \
+	&& rm -rf /tmp/* \
+
+	# Remove Geosever example data
+	&& 	rm -rf $GEOSERVER_DATA_DIR/workspaces/*  \
+	&&  rm -rf $GEOSERVER_DATA_DIR/coverages/*  \
 	&&  rm -rf $GEOSERVER_DATA_DIR/layergroups/* \
-	&&  rm -rf $GEOSERVER_DATA_DIR/data/*
+	&&  rm -rf $GEOSERVER_DATA_DIR/data/* 
+
+
+
+RUN mkdir -p "$JETTY_BASE"
+WORKDIR $JETTY_BASE
+
+RUN set -xe \
+	&& java -jar "$JETTY_HOME/start.jar" --create-startd --add-to-start="server,http,deploy,jsp,jstl,ext,resources,websocket,setuid" \
+	&& chown -R jetty:jetty "$JETTY_BASE" \
+	&& rm -rf /tmp/hsperfdata_root
+
+ENV TMPDIR /tmp/jetty
+RUN set -xe \
+	&& mkdir -p "$TMPDIR" \
+	&& chown -R jetty:jetty "$TMPDIR"
+
+
+
+ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/usr/lib/jni:/usr/share/java:/usr/local/lib/
+
 
 
 VOLUME $GEOSERVER_DATA_DIR	
