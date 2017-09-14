@@ -1,10 +1,10 @@
 ## A docker recipe for Mapbender 3.0.6.3
-### Based Nginx Docker image (Debian:Strech) with PHP7
+### Based Nginx Docker image (Debian:Stretch) with PHP7
 
 Image size of 373MB
 
 ### Install 
-Download Dockerfile 
+Download Dockerfile & nginx config file
 
 cd into download directory 
 
