@@ -3,6 +3,7 @@ ENV MAPBENDER=3.0.6.3
 ENV MAPDIR='/var/www/mapbender'
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+	supervisor \
 	wget \
 	php \
 	php-xml \
@@ -20,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	php-fpm 
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf 
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 RUN mkdir -p ${MAPDIR} \
 	&& cd /tmp \
@@ -38,8 +40,8 @@ RUN mkdir -p ${MAPDIR} \
 	&& sed -e 's/;catch_workers_output/catch_workers_output/' -i /etc/php/7.0/fpm/pool.d/www.conf \
 	&& sed -i "s@/mapbender@$MAPDIR/web@" /etc/nginx/conf.d/default.conf
 
-RUN service php7.0-fpm start
-CMD /etc/init.d/php7.0-fpm restart; nginx -g 'daemon off;'
+RUN mkdir /run/php
 
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 
