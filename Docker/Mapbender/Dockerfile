@@ -36,7 +36,7 @@ RUN mkdir -p ${MAPDIR} \
 	&& sed -e 's/;listen\.group/listen.group/' -i /etc/php/7.0/fpm/pool.d/www.conf \
 	&& sed -e 's/listen = .run.php.php7.0-fpm.sock/listen = 127.0.0.1:9000/' -i /etc/php/7.0/fpm/pool.d/www.conf \
 	&& sed -e 's/;catch_workers_output/catch_workers_output/' -i /etc/php/7.0/fpm/pool.d/www.conf \
-	&& sed -i "s@/mapbender@$MAPDIR@" /etc/nginx/conf.d/default.conf
+	&& sed -i "s@/mapbender@$MAPDIR/web@" /etc/nginx/conf.d/default.conf
 
 RUN service php7.0-fpm start
 CMD /etc/init.d/php7.0-fpm restart; nginx -g 'daemon off;'
