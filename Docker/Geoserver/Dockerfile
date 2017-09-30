@@ -128,10 +128,10 @@ RUN apk add --virtual .build-deps --no-cache\
 	&& rm -rf /tmp/* \
 
 	# Remove Geosever example data
-	&& 	rm -rf $GEOSERVER_DATA_DIR/workspaces/*  \
-	&&  rm -rf $GEOSERVER_DATA_DIR/coverages/*  \
-	&&  rm -rf $GEOSERVER_DATA_DIR/layergroups/* \
-	&&  rm -rf $GEOSERVER_DATA_DIR/data/* 
+	&&	rm -rf $GEOSERVER_DATA_DIR/workspaces/*  \
+	&&	rm -rf $GEOSERVER_DATA_DIR/coverages/*  \
+	&&	rm -rf $GEOSERVER_DATA_DIR/layergroups/* \
+	&&	rm -rf $GEOSERVER_DATA_DIR/data/* 
 
 
 
