@@ -74,8 +74,6 @@ RUN apk add --virtual .build-deps --no-cache\
 	&& rm jetty.tar.gz* \
 	&& rm -fr jetty-home-$JETTY_VERSION/ \
 
-
-
 	# Download and install GeoServer
 	&& mkdir -p $GEOSERVER_DATA_DIR \
 	&& cd /var/lib/jetty/ \
@@ -133,8 +131,6 @@ RUN apk add --virtual .build-deps --no-cache\
 	&&	rm -rf $GEOSERVER_DATA_DIR/layergroups/* \
 	&&	rm -rf $GEOSERVER_DATA_DIR/data/* 
 
-
-
 RUN mkdir -p "$JETTY_BASE"
 WORKDIR $JETTY_BASE
 
@@ -148,10 +144,7 @@ RUN set -xe \
 	&& mkdir -p "$TMPDIR" \
 	&& chown -R jetty:jetty "$TMPDIR"
 
-
-
 ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/usr/lib/jni:/usr/share/java:/usr/local/lib/
-
 
 
 VOLUME $GEOSERVER_DATA_DIR	
