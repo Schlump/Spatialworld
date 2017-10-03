@@ -1,6 +1,10 @@
 FROM nginx
 ENV MAPBENDER=3.0.6.3
 ENV MAPDIR='/var/www/mapbender'
+LABEL maintainer="None"
+LABEL version="0.1"
+LABEL setup="Based nginx (Debian-stretch)"
+
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	supervisor \

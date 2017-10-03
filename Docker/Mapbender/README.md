@@ -5,7 +5,7 @@
 Image size of 399MB
 
 ### Install 
-Download Dockerfile & nginx config file
+Download Dockerfile & config files
 
 cd into download directory 
 
