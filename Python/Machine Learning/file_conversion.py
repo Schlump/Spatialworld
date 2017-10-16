@@ -17,7 +17,7 @@ def convert_2_PNG(dataDir):
                 if counter % 500 == 0:, end=""
                     print ('.', end="")
             
-def split_Train_Test(dataDir):
+def split_Train_Test(dataDir,num):
     path = os.path.dirname(os.path.dirname(dataDir))
     shuffleFiles = "cd "+dataDir+" && for d in ./*/; do ( mkdir -p "+path+"/Test_Data/$d && cd $d && shuf -zen"+str(num)+" *.png | xargs -0 mv -t "+path+"/Test_Data/$d/ ); done"
     subprocess.call(shuffleFiles, shell=True)
