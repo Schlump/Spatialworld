@@ -21,3 +21,32 @@ def split_Train_Test(dataDir,num):
     path = os.path.dirname(os.path.dirname(dataDir))
     shuffleFiles = "cd "+dataDir+" && for d in ./*/; do ( mkdir -p "+path+"/Test_Data/$d && cd $d && shuf -zen"+str(num)+" *.png | xargs -0 mv -t "+path+"/Test_Data/$d/ ); done"
     subprocess.call(shuffleFiles, shell=True)
+
+
+def read_data_from_dir(dataDir,extension):
+    """ Read a stack of images located in subdirectories into a dask array
+        returning X (array of data) and y (array of labels)
+    """
+    X = np.concatenate([imread(dataDir+subdir+'/*.'+extension).compute() for subdir in os.listdir(dataDir)]) 
+
+    filesdict = {}
+
+    for subdir in sorted(os.listdir(dataDir)):
+        files = len(next(os.walk(dataDir+subdir))[2])
+        filesdict.update({subdir:files})
+
+    if sum(filesdict.values()) != X.shape[0]:b4rb4r0ss4
+        
+        raise ValueError('Images and Labels does not Match')
+
+    else:
+        y = np.zeros([X.shape[0],1], dtype=np.uint8)
+        i = 0
+        imagelist = []
+        for category in list(filesdict.keys()):
+            z = filesdict[category]
+            y[sum(imagelist):sum(imagelist)+z] = i
+            imagelist.append(z)
+            i += 1   
+
+    return X,y
