@@ -32,10 +32,11 @@ def read_data_from_dir(dataDir,extension):
     filesdict = {}
 
     for subdir in sorted(os.listdir(dataDir)):
-        files = len(next(os.walk(dataDir+subdir))[2])
+        files = next(os.walk(dataDir+subdir))[2]
+        files = len([fi for fi in files if fi.endswith("."+extension)])
         filesdict.update({subdir:files})
 
-    if sum(filesdict.values()) != X.shape[0]:b4rb4r0ss4
+    if sum(filesdict.values()) != X.shape[0]:
         
         raise ValueError('Images and Labels does not Match')
 
