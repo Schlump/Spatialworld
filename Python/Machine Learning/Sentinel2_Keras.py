@@ -1,3 +1,4 @@
+from __future__ import absolute_import, division, print_function
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
@@ -6,70 +7,86 @@ from keras import backend as K
 import os
 import numpy as np
 import subprocess
+from dask.array.image import imread
+from sklearn.model_selection import train_test_split
+
+
+def read_data_from_dir(dataDir,extension):
+    """ Read a stack of images located in subdirectories into a dask array
+        returning X (array of data) and y (array of labels)
+    """
+    X = np.concatenate([imread(dataDir+subdir+'/*.'+extension).compute() for subdir in os.listdir(dataDir)]) 
+
+    filesdict = {}
+
+    for subdir in sorted(os.listdir(dataDir)):
+        files = next(os.walk(dataDir+subdir))[2]
+        files = len([fi for fi in files if fi.endswith("."+extension)])
+        filesdict.update({subdir:files})
+
+    if sum(filesdict.values()) != X.shape[0]:
+        
+        raise ValueError('Images and Labels does not Match')
+
+    else:
+        y = np.zeros([X.shape[0],1], dtype=np.uint8)
+        i = 0
+        imagelist = []
+        for category in list(filesdict.keys()):
+            z = filesdict[category]
+            y[sum(imagelist):sum(imagelist)+z] = i
+            imagelist.append(z)
+            i += 1   
+
+    return X,y
+        
+
+
+dataDir = 'Sentinel2_Trainingdata/Full_Data/'
+
+X,y = read_data_from_dir(dataDir,'tif')
+num_classes = 10
+X = X.astype('float32')
+X = X[:,:,:,:]
+ 
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42)
+
+X = None
+y = None
+
+y_train = keras.utils.to_categorical(y_train, num_classes)
+y_test = keras.utils.to_categorical(y_test, num_classes)
 
 
 
-def convert_2_PNG(dataDir):
-    counter = 0
-    files = []
-    for subdir in os.listdir(dataDir):
-        for file in os.listdir(dataDir+subdir):
-            if file.endswith(".tif"):
-                 files.append(dataDir+subdir+'/'+file)
-
-        if not files:
-            raise Exception('No Image was found')
-            
-    print ('Files to process: ',len(files))
-    for file in files:
-        counter += 1
-        subprocess.call(['gdal_translate -of PNG -b 2 -b 3 -b 4 ' + file +' '+ os.path.splitext(file)[0]+'.png'], shell=True)
-        if counter % 500 == 0:
-            print ('Files processed: ', counter) 
-
-            
-            
-def split_Train_Test(dataDir):
-    path = os.path.dirname(os.path.dirname(dataDir))
-    shuffleFiles = "cd "+dataDir+" && for d in ./*/; do ( mkdir -p "+path+"/Test_Data/$d && cd $d && shuf -zen"+str(num)+" *.png | xargs -0 mv -t "+path+"/Test_Data/$d/ ); done"
-    subprocess.call(shuffleFiles, shell=True)
-    
-dataDir = '/Sentinel2_Trainingdata/Full_Data/'
-convert_2_PNG(dataDir)
-split_Train_Test(dataDir)
+# dimensions of images
+img_width, img_height = 64, 64
 
 
-img_height, img_width, channels = 64,64,3
-
-train_data_dir = "/Sentinel2_Trainingdata/Train_Data/"
-validation_data_dir = "/Sentinel2_Trainingdata/Test_Data/"
-nb_train_samples = 1875 * 10
-nb_validation_samples = 625 * 10
+nb_train_samples = len(X_train)
+nb_validation_samples = len(X_test)
 epochs = 50
-batch_size = 16
+batch_size = 8
 
 
-height, width, channels
-if K.image_data_format() == 'channels_first':
-    input_shape = (channels, img_width, img_height)
-else:
-    input_shape = (img_width, img_height, channels)
+input_shape = (img_width, img_height, X_train.shape[3])
 
 model = Sequential()
-model.add(Conv2D(32, (3, 3), input_shape=input_shape))
+model.add(Conv2D(8, (3, 3), input_shape=input_shape))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Conv2D(32, (3, 3)))
+model.add(Conv2D(8, (3, 3)))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
-model.add(Conv2D(64, (3, 3)))
+model.add(Conv2D(16, (3, 3)))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
 model.add(Flatten())
-model.add(Dense(64))
+model.add(Dense(32))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
 model.add(Dense(10))
@@ -81,25 +98,20 @@ model.compile(loss='categorical_crossentropy',
 
 
 train_datagen = ImageDataGenerator(
+    rotation_range=180,
     rescale=1. / 255,
     shear_range=0.2,
-    zoom_range=0.2,
-    horizontal_flip=True)
-
+    zoom_range=0.5,
+    horizontal_flip=True
+)
 
 test_datagen = ImageDataGenerator(rescale=1. / 255)
 
-train_generator = train_datagen.flow_from_directory(
-    train_data_dir,
-    target_size=(img_width, img_height),
-    batch_size=batch_size,
-    class_mode='categorical')
 
-validation_generator = test_datagen.flow_from_directory(
-    validation_data_dir,
-    target_size=(img_width, img_height),
-    batch_size=batch_size,
-    class_mode='categorical')
+train_generator = train_datagen.flow(X_train, y_train, batch_size=batch_size)
+
+validation_generator = test_datagen.flow(X_test, y_test, batch_size=batch_size)
+
 
 model.fit_generator(
     train_generator,
@@ -107,5 +119,3 @@ model.fit_generator(
     epochs=epochs,
     validation_data=validation_generator,
     validation_steps=nb_validation_samples // batch_size)
-
-
