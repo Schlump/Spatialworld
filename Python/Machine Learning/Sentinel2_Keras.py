@@ -45,18 +45,23 @@ def replace_missingvalues_bandmean(X):
     """ Read a numpy array and check for missing values (zeros) and 
         replace zeros with band mean
     """
+    X.ndim != 4:
+        raise ValueError('Input not valid, no pic, row, column, band data format')
+        
     zeros = np.where(X[:,:,:] == 0)
-    pic, row, column, band = zeros[0],zeros[1],zeros[2],zeros[3]
+
     bandmean = {}
+
     for i in sorted(np.unique(band)):
         bandmean.update({i:np.mean(X[:,:,:,i])})
         
     for i in range(0,len(zeros[0])):
         pic, row, column, band = zeros[0][i],zeros[1][i],zeros[2][i],zeros[3][i]
         mean = bandmean.get(band)
-        X[pic,row,column,band] = mean
+        X[pic,row,column,band] = int(mean)
         
     return X
+        
 
 
 dataDir = 'Sentinel2_Trainingdata/Full_Data/'
