@@ -45,14 +45,14 @@ def replace_missingvalues_bandmean(X):
     """ Read a numpy array and check for missing values (zeros) and 
         replace zeros with band mean
     """
-    X.ndim != 4:
-        raise ValueError('Input not valid, no pic, row, column, band data format')
+    if X.ndim != 4:
+        raise ValueError('Input not valid, no [pic, row, column, band] data format')
         
     zeros = np.where(X[:,:,:] == 0)
 
     bandmean = {}
 
-    for i in sorted(np.unique(band)):
+    for i in sorted(np.unique(zeros[3])):
         bandmean.update({i:np.mean(X[:,:,:,i])})
         
     for i in range(0,len(zeros[0])):
@@ -112,7 +112,7 @@ model.add(Dense(32))
 model.add(Activation('relu'))
 model.add(Dropout(0.5))
 model.add(Dense(10))
-model.add(Activation('sigmoid'))
+model.add(Activation('softmax'))
 
 model.compile(loss='categorical_crossentropy',
               optimizer='adam',
