@@ -10,6 +10,23 @@ import subprocess
 from dask.array.image import imread
 from sklearn.model_selection import train_test_split
 
+def calc_ndvi(X):
+    ndvi = (X[:,:,:,7] - X[:,:,:,3]) / (X[:,:,:,7] + X[:,:,:,3])
+    return ndvi
+
+
+def min_max_scaling(X):
+    x_min = X.min(axis=(1, 2), keepdims=True)
+    x_max = X.max(axis=(1, 2), keepdims=True)
+    x = (X - x_min)/(x_max-x_min)
+    return x
+
+
+def z_score(X):
+    x = X - X.mean(axis=(1,2),keepdims=True)
+    x = x / X.std(axis=(1,2),keepdims=True)
+
+    return x
 
 def read_data_from_dir(dataDir,extension):
     """ Read a stack of images located in subdirectories into a dask array
@@ -64,15 +81,57 @@ def replace_missingvalues_bandmean(X):
         
 
 
+def create_model(X):
+
+    input_shape = X.shape[1],X.shape[2],X.shape[3]
+    
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), input_shape=input_shape))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Conv2D(64, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Conv2D(32, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    
+    model.add(Flatten())
+    model.add(Dense(64))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(10))
+    model.add(Activation('softmax'))
+    
+    
+    optimizer = optimizers.adam()
+
+
+    model.compile(loss='categorical_crossentropy',
+                  optimizer=optimizer,
+                  metrics=['accuracy'])
+
+
+    return model
+
+
+
 dataDir = 'Sentinel2_Trainingdata/Full_Data/'
 
 X,y = read_data_from_dir(dataDir,'tif')
 num_classes = 10
 X = X.astype('float32')
-X = X[:,:,:,:]
- 
+X = replace_missingvalues_bandmean(X)
+X = X[:,:,:,]
+X = z_score(X)
+
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42)
+
+model = create_model(X)
 
 X = None
 y = None
@@ -81,63 +140,8 @@ y_train = keras.utils.to_categorical(y_train, num_classes)
 y_test = keras.utils.to_categorical(y_test, num_classes)
 
 
-
-# dimensions of images
-img_width, img_height = 64, 64
-
-
-nb_train_samples = len(X_train)
-nb_validation_samples = len(X_test)
 epochs = 50
-batch_size = 8
+batch_size = 16
 
 
-input_shape = (img_width, img_height, X_train.shape[3])
-
-model = Sequential()
-model.add(Conv2D(8, (3, 3), input_shape=input_shape))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Conv2D(8, (3, 3)))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Conv2D(16, (3, 3)))
-model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-
-model.add(Flatten())
-model.add(Dense(32))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
-model.add(Dense(10))
-model.add(Activation('softmax'))
-
-model.compile(loss='categorical_crossentropy',
-              optimizer='adam',
-              metrics=['accuracy'])
-
-
-train_datagen = ImageDataGenerator(
-    rotation_range=180,
-    rescale=1. / 255,
-    shear_range=0.2,
-    zoom_range=0.5,
-    horizontal_flip=True
-)
-
-test_datagen = ImageDataGenerator(rescale=1. / 255)
-
-
-train_generator = train_datagen.flow(X_train, y_train, batch_size=batch_size)
-
-validation_generator = test_datagen.flow(X_test, y_test, batch_size=batch_size)
-
-
-model.fit_generator(
-    train_generator,
-    steps_per_epoch=nb_train_samples // batch_size,
-    epochs=epochs,
-    validation_data=validation_generator,
-    validation_steps=nb_validation_samples // batch_size)
+model.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=epochs,batch_size=batch_size)
