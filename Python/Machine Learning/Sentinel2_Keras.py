@@ -85,16 +85,24 @@ def create_model(X):
 
     input_shape = X.shape[1],X.shape[2],X.shape[3]
     
+    lr = 0.001
+    
+    if X.shape[3] >= 5:
+        lr = 0.0005
+    
     model = Sequential()
     model.add(Conv2D(32, (3, 3), input_shape=input_shape))
+    model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
     model.add(Conv2D(64, (3, 3)))
+    model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
     model.add(Conv2D(32, (3, 3)))
+    model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
@@ -107,7 +115,7 @@ def create_model(X):
     model.add(Activation('softmax'))
     
     
-    optimizer = optimizers.adam()
+    optimizer = optimizers.adam(lr=lr)
 
 
     model.compile(loss='categorical_crossentropy',
@@ -116,6 +124,7 @@ def create_model(X):
 
 
     return model
+        
 
 
 
