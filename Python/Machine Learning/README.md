@@ -1,7 +1,9 @@
-# Classifiying Sentinel-2 Data (27000x64x64x13) on a CNN
+# Classifiying Sentinel-2 Data on a CNN
 ## Train on 21600 samples, validate on 5400 samples (80/20)
-### Currently: 
 
+### Data Description:
+#### 10 Classes
+#### 27000 x 64x64x13
 
 | Number    | Type          |m²   |    nm |
 |-----------|---------------|-----|-------|
@@ -22,7 +24,7 @@ B12  		|SWIR 2 		| 20  |	2190    |
 
 
 
-
+### Currently: 
 | Data          | Accuracy      |
 | ------------- |-------------  |
 | RGB           | 0.850           | 
