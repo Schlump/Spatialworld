@@ -25,13 +25,13 @@ B12  		|SWIR 2 		| 20  |	2190    |
 
 
 ### Currently: 
-| Data          | Accuracy      |
-| ------------- |-------------  |
-| RGB           | 0.850           | 
-| RGB + NIR     | 0.893
-| RGB + SWIR    | 0.888           |
-| RGB + NDVI    | 0.870           |
-| RGB + NDVI + SWIR   | 0.880           |
+| Data          | Accuracy      |Epochs |
+| ------------- |-------------  |-------|
+| RGB           | 0.877         | 32    |
+| RGB + NIR     | 0.907         | 61    |
+| RGB + SWIR    | 0.906         | 52    |
+| RGB + NDVI    | 0.895         | 90    |
+
 
 
 

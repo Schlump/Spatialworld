@@ -24,7 +24,9 @@ def min_max_scaling(X):
 
 def z_score(X):
     x = X - X.mean(axis=(1,2),keepdims=True)
-    x = x / X.std(axis=(1,2),keepdims=True)
+    std = X.std(axis=(1,2),keepdims=True)
+    std[np.where(std == 0)] = 1
+    x = x / std
 
     return x
 
@@ -124,23 +126,17 @@ def create_model(X):
 
 
     return model
-        
-
-
-
-dataDir = 'Sentinel2_Trainingdata/Full_Data/'
-
+    
 X,y = read_data_from_dir(dataDir,'tif')
+
 num_classes = 10
 X = X.astype('float32')
 X = replace_missingvalues_bandmean(X)
-X = X[:,:,:,]
 X = z_score(X)
+
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42)
-
-model = create_model(X)
 
 X = None
 y = None
@@ -149,8 +145,21 @@ y_train = keras.utils.to_categorical(y_train, num_classes)
 y_test = keras.utils.to_categorical(y_test, num_classes)
 
 
-epochs = 50
-batch_size = 16
+datagen = ImageDataGenerator(
+rotation_range=90)
+
+reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=0, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0)
+epochs = 35
+batch_size = 32
 
 
-model.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=epochs,batch_size=batch_size)
+datagen.fit(X_train)
+
+filepath="/weights/"+k+"_weights-zscore_-{epoch:02d}-{val_acc:.3f}.hdf5"
+checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
+
+trained =  model.fit_generator(datagen.flow(X_train, y_train, batch_size=batch_size,seed=42),
+                steps_per_epoch=len(X_train) / batch_size, epochs=epochs)
+
+
