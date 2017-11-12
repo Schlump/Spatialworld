@@ -183,40 +183,62 @@ def VGG_like_model_batchnorm(X):
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     
     return model
+
+
+
+def pretrained_VGG16(X):
     
-X,y = read_data_from_dir(dataDir,'tif')
+    input_shape = X.shape[1],X.shape[2],X.shape[3]
 
-num_classes = 10
-X = X.astype('float32')
-X = replace_missingvalues_bandmean(X)
-X = z_score(X)
+    pretrained =  VGG16(input_shape=input_shape,weights='imagenet', include_top=False,pooling=max)
 
+    inputs = Input(shape=input_shape,name = 'image_input')
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42)
+    output_vgg16_conv = pretrained(inputs)
 
-X = None
-y = None
+    #Add the fully-connected layers 
+    x = Flatten(name='flatten')(output_vgg16_conv)
+    x = Dense(512, activation='relu', name='fc1')(x)
+    x = Dense(128, activation='relu', name='fc2')(x)
+    x = Dense(10, activation='softmax', name='predictions')(x)
 
-y_train = keras.utils.to_categorical(y_train, num_classes)
-y_test = keras.utils.to_categorical(y_test, num_classes)
-
-
-datagen = ImageDataGenerator(
-rotation_range=90)
-
-reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=0, mode='auto', epsilon=0.0001, cooldown=0, min_lr=0)
-epochs = 35
-batch_size = 32
+    #Create own model 
+    model = Model(input=inputs, output=x)
 
 
-datagen.fit(X_train)
+    model.compile(loss='categorical_crossentropy',
+                  optimizer='adam',
+                  metrics=['accuracy'])
+    
+    return model
 
-filepath="/weights/"+k+"_weights-zscore_-{epoch:02d}-{val_acc:.3f}.hdf5"
-checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    
+def get_data(bands=[1,2,3]):
 
+    dataDir = 'Sentinel2_Trainingdata/Full_Data/'
+    X,y = read_data_from_dir(dataDir,'tif')
 
-trained =  model.fit_generator(datagen.flow(X_train, y_train, batch_size=batch_size,seed=42),
-                steps_per_epoch=len(X_train) / batch_size, epochs=epochs)
+    num_classes = 10
+    X = X.astype('float32')
+    print('Replacing missing values')
+    X = X[:,:,:,bands]
+    X = replace_missingvalues_bandmean(X)
+    print ('Z-scoring')
+    X = z_score(X)
+    num_classes = len(np.unique(y))
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42)
+
+    X = None
+    y = None
+
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
+    
+    return X_train,X_test,y_train,y_test,num_classes
+
+    
+
 
 
