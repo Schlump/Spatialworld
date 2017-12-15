@@ -215,7 +215,7 @@ def pretrained_VGG16(X):
     
 def get_data(bands=[1,2,3]):
 
-    dataDir = 'Sentinel2_Trainingdata/Full_Data/'
+    dataDir = '/home/schlupp/Data/Sentinel2_Trainingdata/Full_Data/'
     X,y = read_data_from_dir(dataDir,'tif')
 
     num_classes = 10
@@ -223,12 +223,18 @@ def get_data(bands=[1,2,3]):
     print('Replacing missing values')
     X = X[:,:,:,bands]
     X = replace_missingvalues_bandmean(X)
-    print ('Z-scoring')
-    X = z_score(X)
+
     num_classes = len(np.unique(y))
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42)
+    
+    std = X_train.std(axis=(0,1,2))
+    std[np.where(std == 0)] = std.mean()
+    mean = X_train.mean(axis=(0,1,2))
+    
+    X_train = (X_train - mean) / std
+    X_test = (X_test - mean) / std
 
     X = None
     y = None
@@ -237,8 +243,4 @@ def get_data(bands=[1,2,3]):
     y_test = keras.utils.to_categorical(y_test, num_classes)
     
     return X_train,X_test,y_train,y_test,num_classes
-
-    
-
-
 
