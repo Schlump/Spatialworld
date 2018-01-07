@@ -39,3 +39,15 @@ def plot_footprint_folium(GeoDataFrame):
                  ),popup=string).add_to(map_)
                       
     return map_
+
+
+
+
+def downlod_quicklook(id_,username,password):
+	url = "https://scihub.copernicus.eu/apihub/odata/v1/Products('{}')/Products('Quicklook')/$value".format(id_)
+    bytes_img = requests.session().get(url, auth=(username,password)).content
+    if type(bytes_img) != bytes:
+    	break
+	write_image = open(id_+'_quicklook.jpg', 'wb') 
+	write_image.write(bytes_img) 
+	write_image.close()
