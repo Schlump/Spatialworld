@@ -10,9 +10,12 @@ RUN apk update && apk upgrade \
 	file \
 	ca-certificates \
 	&& mkdir -p /opt \
+	&& mkdir -p /data \
 	&& cd /opt \
     && wget -q "http://step.esa.int/thirdparties/sen2cor/${SEN2COR_VERSION}/${SEN2COR}"  \
     && chmod +x ${SEN2COR} \
   	&& ./${SEN2COR} \
  	&& rm -rf ${SEN2COR} \
  	&& apk del .build-dependencies
+
+VOLUME [ "/data" ]
