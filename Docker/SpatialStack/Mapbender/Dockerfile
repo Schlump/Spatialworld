@@ -1,6 +1,6 @@
 FROM nginx
-ENV MAPBENDER=3.0.6.3
-ENV MAPDIR='/var/www/mapbender'
+ARG MAPBENDER=3.0.6.3
+ARG MAPDIR='/var/www/mapbender'
 LABEL maintainer="None"
 LABEL version="0.1"
 LABEL setup="Based nginx (Debian-stretch)"
