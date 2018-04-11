@@ -1,8 +1,7 @@
 FROM alpine:latest
-
-ARG SEN2COR_VERSION='2.4.0'
-ARG SEN2COR="Sen2Cor-${SEN2COR_VERSION}-Linux64.run"
-ENV PATH="/opt/Sen2Cor-2.4.0-Linux64/bin:${PATH}"
+ARG SEN2COR_VERSION='2.5.5'
+ARG SEN2COR="Sen2Cor-02.05.05-Linux64.run"
+ENV PATH="/opt/Sen2Cor-02.05.05-Linux64/bin:${PATH}"
 
 RUN apk update && apk upgrade \
 	&& apk add --no-cache --virtual .build-dependencies \
